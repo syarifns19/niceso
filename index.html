@@ -1,0 +1,124 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><title>NICESO Sales Intelligence</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f6f5f1;--cd:#fff;--tx:#1d1d1b;--mu:#6b6a65;--ln:#e3e1da;--ac:#c2410c;--a2:#0f766e;--bad:#b91c1c;--ok:#15803d;--wn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161614;--cd:#211f1d;--tx:#f0eee8;--mu:#a3a199;--ln:#38352f;--ac:#fb923c;--a2:#2dd4bf;--bad:#f87171;--ok:#4ade80;--wn:#fbbf24}}
+:root[data-theme="dark"]{--bg:#161614;--cd:#211f1d;--tx:#f0eee8;--mu:#a3a199;--ln:#38352f;--ac:#fb923c;--a2:#2dd4bf;--bad:#f87171;--ok:#4ade80;--wn:#fbbf24}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:20px;margin:0}h2{font-size:15px;margin:0 0 8px}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.sub{color:var(--mu);font-size:12px}
+select,input,button{font:inherit;color:var(--tx);background:var(--cd);border:1px solid var(--ln);border-radius:8px;padding:6px 10px}
+button{cursor:pointer}button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+.cd{background:var(--cd);border:1px solid var(--ln);border-radius:12px;padding:14px;margin-bottom:12px}
+.kp .cd{margin:0}.kp b{font-size:18px;display:block}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px}.tabs button{white-space:nowrap}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
+.hb{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto;gap:8px;align-items:center;font-size:12px;margin:3px 0}
+.hb .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hb .t{background:var(--ln);height:8px;border-radius:4px}
+.hb .t i{display:block;height:100%;background:var(--ac);border-radius:4px}.hb em{font-style:normal;color:var(--mu);min-width:64px;text-align:right}
+.cols{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:3px;height:150px;align-items:end;margin:8px 0 22px}
+.col{height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative}
+.col i{width:100%;background:var(--a2);opacity:.55;border-radius:3px 3px 0 0;min-height:1px}.col i.hl{background:var(--ac);opacity:1}
+.col b{position:absolute;bottom:-18px;font-size:10px;font-weight:400;color:var(--mu)}
+.ins{background:var(--bg);border-left:3px solid var(--ac);padding:8px 12px;margin:8px 0 0;border-radius:4px}
+.sc{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--ln);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}
+td input{width:70px;text-align:right}
+.tg{padding:2px 8px;border-radius:10px;font-size:11px;color:#fff}.s0{background:var(--mu)}.s1{background:var(--bad)}.s2{background:var(--wn)}.s3{background:var(--ok)}
+.pl{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln)}.pl:last-child{border:0}.pl input{margin-top:4px}
+.fl{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}
+[hidden]{display:none!important}</style></head><body><main id="app"></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const sb=supabase.createClient(CFG.url,CFG.key);let ROLE='store',PROF=null,PERS=[],PER='',LOG=[],stores=[],cur=0,tab='rank',ST={cat:'',q:'',cls:'',only:false};
+const $=s=>document.querySelector(s),nf=new Intl.NumberFormat('id-ID'),WD=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+const rp=n=>n>=1e6?'Rp '+(n/1e6).toFixed(1).replace('.',',')+' jt':'Rp '+nf.format(Math.round(n)),pc=x=>x.toFixed(0)+'%',hh=h=>String(h).padStart(2,'0')+':00';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),nm=s=>s.replace(/^ZZ\s*/,'');
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},ld=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
+function agg(S){const A={q:0,v:0,P:{},H:Array.from({length:24},()=>({q:0,v:0})),Dy:{},C:{},B:[[0,2e3,'< 2 rb'],[2e3,5e3,'2–5 rb'],[5e3,1e4,'5–10 rb'],[1e4,2e4,'10–20 rb'],[2e4,5e4,'20–50 rb'],[5e4,1e12,'> 50 rb']].map(b=>({l:b[2],lo:b[0],hi:b[1],q:0,v:0,s:new Set()}))};
+for(const r of S.rows){const d=r[0],h=r[1],i=r[2],q=r[3],v=r[4];A.q+=q;A.v+=v;const p=A.P[i]||(A.P[i]={i,q:0,v:0,c:S.items[i][1]});p.q+=q;p.v+=v;A.H[h].q+=q;A.H[h].v+=v;const y=A.Dy[d]||(A.Dy[d]={q:0,v:0});y.q+=q;y.v+=v;A.C[p.c]=(A.C[p.c]||0)+v;const u=v/q,b=A.B.find(b=>u>=b.lo&&u<b.hi);b.q+=q;b.v+=v;b.s.add(i)}
+const ks=Object.keys(A.Dy).sort();A.min=ks[0];A.max=ks[ks.length-1];A.wd=WD.map(()=>({q:0,v:0,n:0}));A.days=[];
+for(const t=new Date(A.min+'T00:00:00'),e=new Date(A.max+'T00:00:00');t<=e;t.setDate(t.getDate()+1)){const k=t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0'),w=A.wd[t.getDay()],y=A.Dy[k]||{q:0,v:0};w.n++;w.q+=y.q;w.v+=y.v;A.days.push({k,d:t.getDate(),wd:t.getDay(),...y})}
+A.nd=A.days.length;A.wd.forEach(w=>w.a=w.n?w.v/w.n:0);
+A.prods=Object.values(A.P).sort((a,b)=>b.v-a.v);let c=0;A.prods.forEach(p=>{p.avg=p.q/A.nd;c+=p.v;p.k=c/A.v<=.7?'A':c/A.v<=.9?'B':'C'});return A}
+const lift=a=>{a=a.filter(x=>x.n);const m=a.map(x=>x.v/x.n).sort((x,y)=>x-y),md=m[Math.floor(m.length/2)];return a.reduce((s,x)=>s+Math.max(0,md-x.v/x.n)*x.n,0)};
+const hbars=(a,f)=>{const m=Math.max(...a.map(x=>x.x),1);return a.map((x,k)=>`<div class="hb"><span class="n">${k+1}. ${esc(x.l)}</span><span class="t"><i style="width:${x.x/m*100}%"></i></span><em>${f(x)}</em></div>`).join('')};
+const cols=a=>{const m=Math.max(...a.map(x=>x.x),1);return `<div class="cols" style="--n:${a.length}">${a.map(x=>`<div class="col" title="${esc(x.l)}: ${esc(x.t||x.x)}"><i style="height:${x.x/m*100}%" class="${x.hl?'hl':''}"></i><b>${x.l}</b></div>`).join('')}</div>`};
+const tbl=(h,r)=>`<div class="sc"><table><tr>${h.map(x=>`<th>${x}</th>`).join('')}</tr>${r.map(x=>`<tr>${x.map(y=>`<td>${y}</td>`).join('')}</tr>`).join('')}</table></div>`;
+const top3=(a,f)=>a.map((x,i)=>({...x,i})).sort((x,y)=>y[f]-x[f]).slice(0,3).map(x=>x.i);
+const V={};
+let DB=null,ME=null,CK=ld('ckl',{}),CD=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const CHK=['Ada di rak','Display depan / eye level','Harga & label sesuai','Stok cukup','Rapi & bersih'],sid=s=>s.replace(/[^A-Za-z0-9]/g,'-'),pk=n=>n.replace(/[^A-Za-z0-9]/g,'_').slice(0,40);
+function ckSave(fn){const S=stores[cur],id=sid(S.name)+'_'+CD,o=CK[id]||{store:S.name,date:CD,items:{},notes:{}};fn(o);o.by=PROF.name;CK[id]=o;render();sb.from('display_checks').upsert({store_code:S.code,check_date:CD,data:o},{onConflict:'store_code,check_date'}).then(r=>{if(r.error)alert('Gagal menyimpan: '+r.error.message)})}
+V.disp=(S,A)=>{const L=A.prods.slice(0,20),o=CK[sid(S.name)+'_'+CD]||{items:{},notes:{}},sm=r=>(r||[]).reduce((a,b)=>a+b,0),done=L.reduce((s,p)=>s+sm(o.items[pk(S.items[p.i][0])]),0),tot=L.length*5,pr=done/tot*100;
+const hd=Object.values(CK).filter(d=>d.store==S.name).sort((a,b)=>a.date<b.date?-1:1).slice(-7),sc=d=>L.reduce((s,p)=>s+sm((d.items||{})[pk(S.items[p.i][0])]),0)/tot*100,rate=CHK.map((c,j)=>hd.length?hd.reduce((s,d)=>s+L.reduce((a,p)=>a+(((d.items||{})[pk(S.items[p.i][0])]||[])[j]||0),0),0)/(hd.length*L.length)*100:0),wk=rate.indexOf(Math.min(...rate));
+return `<div class="cd"><h2>Ceklis pengecekan display produk prioritas</h2><div class="fl"><label>Tanggal <input type="date" id="cd" value="${CD}"></label><b>Selesai ${pc(pr)} (${done}/${tot} poin)</b></div><div class="hb" style="grid-template-columns:1fr"><span class="t"><i style="width:${pr}%;background:var(--ok)"></i></span></div>
+${tbl(['Produk prioritas','Kelas',...CHK,'Status','Catatan'],L.map(p=>{const n=S.items[p.i][0],k=pk(n),r=o.items[k]||[0,0,0,0,0],s=sm(r);return [esc(n),p.k,...r.map((v,j)=>`<input type="checkbox" class="ck" data-p="${k}" data-j="${j}" ${v?'checked':''}>`),`<span class="tg s${s==5?3:s==0?0:2}">${s==5?'Lengkap':s==0?'Belum':'Sebagian'}</span>`,`<input class="cn" data-p="${k}" style="width:150px;text-align:left" value="${esc(o.notes[k]||'')}">`]}))}
+<div class="ins">Produk prioritas = 20 SKU omzet tertinggi (${pc(L.reduce((s,p)=>s+p.v,0)/A.v*100)} dari omzet). Cek tiap hari sebelum jam ramai.${hd.length?` Poin paling sering gagal dalam ${hd.length} pengecekan terakhir: ${CHK[wk]} (terpenuhi ${pc(rate[wk])}).`:''}</div></div>
+${hd.length?`<div class="cd"><h2>Kepatuhan ${hd.length} pengecekan terakhir</h2>${cols(hd.map(d=>({l:d.date.slice(8),x:sc(d),t:pc(sc(d))})))}</div>`:''}<div class="sub">Tersimpan di database dan terlihat oleh supervisor dan manager.</div>`};
+
+V.rank=(S,A)=>{const L=A.prods.filter(p=>!ST.cat||p.c==ST.cat),mk=f=>L.slice().sort((a,b)=>b[f]-a[f]).slice(0,20).map(p=>({l:S.items[p.i][0],x:p[f],p}));
+return `<div class="fl"><label>Kategori <select id="fc"><option value="">Semua</option>${Object.keys(A.C).sort().map(c=>`<option ${c==ST.cat?'selected':''}>${esc(c)}</option>`).join('')}</select></label></div><div class="g2"><div class="cd"><h2>Top 20 Quantity</h2>${hbars(mk('q'),x=>nf.format(x.x)+' pcs')}</div><div class="cd"><h2>Top 20 Value</h2>${hbars(mk('v'),x=>rp(x.x))}</div></div>
+<div class="ins">10 produk teratas = ${pc(A.prods.slice(0,10).reduce((s,p)=>s+p.v,0)/A.v*100)} omzet. ${A.prods.filter(p=>p.k=='A').length} SKU kelas A menghasilkan 70% omzet dari total ${A.prods.length} SKU terjual.</div>`};
+V.hour=(S,A)=>{const a=A.H.map((h,i)=>({...h,i})),on=a.filter(h=>h.v>0),lo=on[0].i,hi=on[on.length-1].i,r=a.slice(lo,hi+1),t=top3(A.H,'v'),s=t.reduce((x,i)=>x+A.H[i].v,0)/A.v*100;
+return `<div class="cd"><h2>Omzet per jam</h2>${cols(r.map(h=>({l:hh(h.i).slice(0,2),x:h.v,t:rp(h.v),hl:t.includes(h.i)})))}<h2>Quantity per jam</h2>${cols(r.map(h=>({l:hh(h.i).slice(0,2),x:h.q,t:h.q+' pcs',hl:t.includes(h.i)})))}<div class="ins">Jam tersibuk: ${t.map(hh).join(', ')} (${pc(s)} omzet). Toko aktif ${hh(lo)}–${hh(hi)}.</div></div>`};
+V.day=(S,A)=>{const t=top3(A.days,'v'),o=[1,2,3,4,5,6,0],b=o.slice().sort((x,y)=>A.wd[y].a-A.wd[x].a);
+return `<div class="cd"><h2>Omzet harian (${A.min} s/d ${A.max})</h2>${cols(A.days.map((d,i)=>({l:d.d,x:d.v,t:rp(d.v),hl:t.includes(i)})))}</div><div class="cd"><h2>Rata-rata per hari dalam seminggu</h2>${tbl(['Hari','Jumlah hari','Rata-rata omzet','Rata-rata qty'],o.map(i=>[WD[i],A.wd[i].n,rp(A.wd[i].a),(A.wd[i].q/A.wd[i].n).toFixed(0)]))}<div class="ins">Hari terkuat ${WD[b[0]]} (${rp(A.wd[b[0]].a)}), terlemah ${WD[b[6]]} (${rp(A.wd[b[6]].a)}).</div></div>`};
+V.price=(S,A)=>{const mq=A.B.reduce((a,b)=>b.q>a.q?b:a),mv=A.B.reduce((a,b)=>b.v>a.v?b:a);
+return `<div class="cd"><h2>Quantity per rentang harga satuan</h2>${cols(A.B.map(b=>({l:b.l,x:b.q,t:b.q+' pcs',hl:b==mq})))}${tbl(['Harga','SKU','Qty','% Qty','Omzet','% Omzet'],A.B.map(b=>[b.l,b.s.size,nf.format(b.q),pc(b.q/A.q*100),rp(b.v),pc(b.v/A.v*100)]))}<div class="ins">Volume terbanyak di harga ${mq.l} (${pc(mq.q/A.q*100)} qty). Omzet terbesar di ${mv.l} (${pc(mv.v/A.v*100)}). Harga makin tinggi, qty makin turun, jadi jaga stok dan variasi di rentang ${mq.l} dan ${mv.l}.</div></div>`};
+function opp(S,A){const hg=lift(A.H.map(h=>({v:h.v,n:A.nd}))),wg=lift(A.wd),aV=A.prods.filter(p=>p.k=='A').reduce((s,p)=>s+p.v,0),sl=A.prods.filter(p=>p.q<=2).length,cs=Object.entries(A.C).sort((a,b)=>b[1]-a[1]);
+return [{t:'Ketersediaan produk kelas A',v:aV*.05,d:`Asumsi 5% penjualan kelas A hilang karena stok kosong. Menjaga stok = potensi ${rp(aV*.05)}/bulan.`},
+{t:'Dongkrak hari lemah',v:wg,d:`Jika hari di bawah median dinaikkan ke rata-rata median hari.`},
+{t:'Dongkrak jam sepi',v:hg,d:`Jika jam di bawah median dinaikkan ke median (promo jam sepi, display, sapaan aktif).`},
+{t:'Rapikan SKU lambat',v:null,d:`${sl} dari ${A.prods.length} SKU hanya laku ≤2 unit sebulan. Kurangi order, pindahkan ruang rak ke produk kelas A.`},
+{t:'Kategori terkuat vs terlemah',v:null,d:`${esc(cs[0][0])} menyumbang ${pc(cs[0][1]/A.v*100)}; ${esc(cs[cs.length-1][0])} hanya ${pc(cs[cs.length-1][1]/A.v*100)}. Evaluasi ruang rak dan promo lintas kategori.`}]}
+V.grow=(S,A)=>{const o=opp(S,A);return `<div class="cd"><h2>Peluang peningkatan omzet (estimasi)</h2>${o.map(x=>`<div class="pl"><div><b>${x.t}${x.v?' · '+rp(x.v):''}</b><br><span class="sub" style="font-size:13px">${x.d}</span></div></div>`).join('')}<div class="ins">Angka adalah estimasi berbasis asumsi yang tertulis di tiap baris, bukan prediksi pasti.</div></div>`};
+function plan(S,A){const t=A.prods.slice(0,10),ts=t.reduce((s,p)=>s+p.v,0)/A.v*100,h=top3(A.H,'v'),hs=h.reduce((x,i)=>x+A.H[i].v,0)/A.v*100,ws=A.wd.map((w,i)=>({i,a:w.a,n:w.n})).filter(w=>w.n).sort((a,b)=>a.a-b.a),sl=A.prods.filter(p=>p.q<=2).length,mq=A.B.reduce((a,b)=>b.q>a.q?b:a),mv=A.B.reduce((a,b)=>b.v>a.v?b:a);
+return [[1,'Amankan stok 10 produk teratas',`10 SKU = ${pc(ts)} omzet (${t.slice(0,3).map(p=>esc(S.items[p.i][0])).join(', ')}, dll). Isi stok di tab Kontrol Stok dan pastikan tidak pernah kosong.`],
+[1,`Siapkan toko sebelum jam ${hh(Math.min(...h))}`,`Jam ${h.map(hh).join(', ')} = ${pc(hs)} omzet. Rak penuh, kasir dan frontliner siaga, jadwal istirahat digeser.`],
+[2,`Promo khusus hari ${WD[ws[0].i]}`,`Rata-rata ${rp(ws[0].a)} vs ${WD[ws[ws.length-1].i]} ${rp(ws[ws.length-1].a)}. Pakai bundling atau voucher NICESO Club di hari ini.`],
+[2,'Jaga harga sweet spot',`Qty terbanyak di ${mq.l}, omzet terbesar di ${mv.l}. Pastikan variasi dan stok di dua rentang ini lengkap.`],
+[3,'Bersihkan SKU lambat',`${sl} SKU (${pc(sl/A.prods.length*100)}) laku ≤2 unit. Stop reorder, display ulang, bundling atau diskon.`]].map((x,i)=>({p:['','Tinggi','Sedang','Rendah'][x[0]],t:x[1],d:x[2],k:'pl:'+S.name+':'+i}))}
+V.act=()=>stores.map(S=>{const A=S.A||(S.A=agg(S));return `<div class="cd"><h2>${esc(nm(S.name))}</h2>${plan(S,A).map(x=>`<div class="pl"><input type="checkbox" data-k="${esc(x.k)}" ${ld(x.k,0)?'checked':''}><div><b>${x.t}</b> <span class="tg ${x.p=='Tinggi'?'s1':x.p=='Sedang'?'s2':'s0'}">${x.p}</span><br><span class="sub" style="font-size:13px">${x.d}</span></div></div>`).join('')}</div>`}).join('')+`<div class="sub">Untuk menambah toko (Palembang dll), upload file Detailed Sales toko tersebut lewat tombol di atas.</div>`;
+const cfg=()=>ld('cfg',{lead:3,cover:14}),sk=(S,p)=>'stk:'+S.name+':'+S.items[p.i][0];
+function row(S,p){const c=cfg(),s=ld(sk(S,p),null),cv=s==null||p.avg==0?null:s/p.avg,need=Math.max(0,Math.ceil(p.avg*(c.lead+c.cover))-(s||0)),st=cv==null?['Isi stok',0]:cv<c.lead?['Order sekarang',1]:cv<c.lead+c.cover/2?['Pantau',2]:cv>c.cover*3?['Berlebih',2]:['Aman',3];
+return [esc(S.items[p.i][0]),p.k,p.avg.toFixed(1),Math.ceil(p.avg*c.lead),`<input type="number" min="0" class="st" data-k="${esc(sk(S,p))}" value="${s??''}">`,cv==null?'–':cv.toFixed(1),`<span class="tg s${st[1]}">${st[0]}</span>`,s==null?'–':need]}
+V.stock=(S,A)=>{const c=cfg();let L=A.prods.slice(0,80).filter(p=>(!ST.q||S.items[p.i][0].toLowerCase().includes(ST.q.toLowerCase()))&&(!ST.cls||p.k==ST.cls));if(ST.only)L=L.filter(p=>row(S,p)[6].includes('s1'));
+return `<div class="cd"><h2>Kontrol stok (80 SKU teratas menurut omzet)</h2><div class="fl"><label>Lead time (hari) <input type="number" id="ld" min="0" value="${c.lead}" style="width:60px"></label><label>Target cover (hari) <input type="number" id="cv" min="1" value="${c.cover}" style="width:60px"></label><input id="sq" placeholder="Cari produk" value="${esc(ST.q)}"><select id="sc"><option value="">Semua kelas</option>${['A','B','C'].map(k=>`<option ${ST.cls==k?'selected':''}>${k}</option>`).join('')}</select><label><input type="checkbox" id="so" ${ST.only?'checked':''}> Hanya yang perlu order</label></div>
+${tbl(['Produk','Kelas','Jual/hari','Min stok','Stok sekarang','Hari cover','Status','Saran order'],L.map(p=>row(S,p)))}<div class="ins">Data penjualan tidak memuat stok, jadi isi kolom Stok sekarang dari sistem atau stok opname (tersimpan di browser ini). Min stok = jual/hari × lead time. Saran order = jual/hari × (lead time + target cover) − stok.</div></div>`};
+
+async function loadPeriods(){const r=await sb.from('sales_data').select('period');PERS=[...new Set((r.data||[]).map(x=>x.period))].sort().reverse();if(!PER||!PERS.includes(PER))PER=PERS[0]||''}
+async function loadAll(){await loadPeriods();stores=[];if(PER){const r=await sb.from('sales_data').select('store_code,store_name,payload').eq('period',PER);stores=(r.data||[]).map(x=>({code:x.store_code,name:x.store_name,items:x.payload.items,rows:x.payload.rows})).sort((a,b)=>a.name<b.name?-1:1)}if(cur>=stores.length)cur=0}
+async function loadChecks(){const d=new Date(Date.now()-30*864e5).toISOString().slice(0,10),r=await sb.from('display_checks').select('data,check_date').gte('check_date',d);CK={};(r.data||[]).forEach(x=>CK[sid(x.data.store)+'_'+x.check_date]=x.data)}
+function empty(){$('#app').innerHTML=`<div class="cd"><h1>NICESO Sales Intelligence</h1><p>Belum ada data penjualan${PER?' periode '+PER:''}.${ROLE=='manager'?' Upload file Detailed Sales di bawah.':' Hubungi manager.'}</p>${ROLE=='manager'?`<button onclick="$('#uf').click()">+ Upload toko</button><input type="file" id="uf" accept=".xlsx,.xls" multiple hidden> `:''}<button id="lo">Keluar</button>${LOG.length?'<p>'+LOG.map(esc).join('<br>')+'</p>':''}</div>`;const u=$('#uf');if(u)u.onchange=e=>up(e.target.files);$('#lo').onclick=async()=>{await sb.auth.signOut();location.reload()}}
+function login(msg){$('#app').innerHTML=`<div class="cd" style="max-width:360px;margin:60px auto"><h1>NICESO Sales Intelligence</h1><p class="sub">Masuk dengan akun toko, supervisor, atau manager.</p><div style="display:grid;gap:8px"><input id="lu" placeholder="Username" autocapitalize="none" autocomplete="username"><input id="lp" type="password" placeholder="Password" autocomplete="current-password"><button class="on" id="lb">Masuk</button><div id="lm" style="color:var(--bad)">${esc(msg||'')}</div></div></div>`;const go=async()=>{$('#lm').textContent='';const r=await sb.auth.signInWithPassword({email:$('#lu').value.trim().toLowerCase()+'@niceso.app',password:$('#lp').value});if(r.error)$('#lm').textContent='Username atau password salah.';else boot()};$('#lb').onclick=go;$('#lp').onkeydown=e=>{if(e.key=='Enter')go()}}
+async function boot(){const s=(await sb.auth.getSession()).data.session;if(!s)return login();const p=await sb.from('profiles').select('role,name').eq('user_id',s.user.id).maybeSingle();if(!p.data){await sb.auth.signOut();return login('Akun belum diberi peran. Hubungi manager.')}PROF=p.data;ROLE=p.data.role;ME=s.user.id;await loadAll();await loadChecks();tab=stores.length>1?'all':'rank';render()}
+V.all=()=>{const R_=stores.map(S=>{const A=S.A||(S.A=agg(S)),o=CK[sid(S.name)+'_'+CD]||{items:{}};return {S,A,c:Object.values(o.items).reduce((a,r)=>a+r.reduce((x,y)=>x+y,0),0)}}).sort((a,b)=>b.A.v-a.A.v),T=R_.reduce((s,r)=>s+r.A.v,0);
+return `<div class="cd"><h2>Perbandingan toko · ${PER}</h2>${hbars(R_.map(r=>({l:nm(r.S.name),x:r.A.v})),x=>rp(x.x))}${tbl(['Toko','Omzet','% Total','Qty','Rata-rata/hari','Ceklis display '+CD],R_.map(r=>[esc(nm(r.S.name)),rp(r.A.v),pc(r.A.v/T*100),nf.format(r.A.q),rp(r.A.v/r.A.nd),r.c+'%']))}<div class="ins">Total ${stores.length} toko: ${rp(T)}. Tertinggi ${esc(nm(R_[0].S.name))}, terendah ${esc(nm(R_[R_.length-1].S.name))}. Ceklis diisi di tab Ceklis Display tiap toko.</div></div>`};
+const TABS=[['all','Ringkasan Semua Toko'],['rank','Product Ranking'],['hour','Hourly Sales'],['day','Daily Performance'],['price','Price Analysis'],['grow','Growth Opportunity'],['act','Store Action Plan'],['stock','Kontrol Stok'],['disp','Ceklis Display']];
+function render(){if(!stores.length)return empty();const y=scrollY,S=stores[cur],A=S.A||(S.A=agg(S));$('#app').innerHTML=`<div class="top"><div><h1>NICESO Sales Intelligence</h1><div class="sub">${esc(nm(S.name))} · ${A.min} s/d ${A.max} · ${{manager:'Akses Manager (semua toko)',spv:'Akses SPV',store:'Akses Toko'}[ROLE]}</div></div><div class="fl"><select id="sp">${PERS.map(p=>`<option ${p==PER?'selected':''}>${p}</option>`).join('')}</select>${stores.length>1?`<select id="ss">${stores.map((s,i)=>`<option value="${i}" ${i==cur?'selected':''}>${esc(nm(s.name))}</option>`).join('')}</select>`:''}${ROLE=='manager'?`<button onclick="$('#uf').click()">+ Upload toko</button><input type="file" id="uf" accept=".xlsx,.xls" multiple hidden>`:''}${ROLE=='manager'?'<button id="bk">Unduh cadangan</button>':''}<button id="lo">Keluar</button></div></div>
+${LOG.length?`<div class="cd"><h2>Hasil upload</h2>${LOG.map(esc).join('<br>')}</div>`:''}<div class="kp" ${tab=='all'?'hidden':''}><div class="cd"><span class="sub">Omzet</span><b>${rp(A.v)}</b></div><div class="cd"><span class="sub">Qty terjual</span><b>${nf.format(A.q)}</b></div><div class="cd"><span class="sub">SKU terjual</span><b>${A.prods.length}</b></div><div class="cd"><span class="sub">Rata-rata/hari</span><b>${rp(A.v/A.nd)}</b></div></div>
+<div class="tabs">${TABS.filter(t=>t[0]!='all'||stores.length>1).map(t=>`<button class="${t[0]==tab?'on':''}" data-t="${t[0]}">${t[1]}</button>`).join('')}</div>${V[tab](S,A)}`;bind();scrollTo(0,y)}
+function bind(){const a=$('#app');a.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;render()});const s_=$('#ss'),u_=$('#uf');if(s_)s_.onchange=e=>{cur=+e.target.value;render()};if(u_)u_.onchange=e=>up(e.target.files);
+const on=(i,f)=>{const e=$(i);if(e)e.onchange=f};on('#fc',e=>{ST.cat=e.target.value;render()});on('#ld',e=>{sv('cfg',{...cfg(),lead:+e.target.value});render()});on('#cv',e=>{sv('cfg',{...cfg(),cover:+e.target.value||1});render()});on('#sc',e=>{ST.cls=e.target.value;render()});on('#so',e=>{ST.only=e.target.checked;render()});
+const q=$('#sq');if(q)q.onkeydown=e=>{if(e.key=='Enter'){ST.q=q.value;render()}};q&&(q.onblur=()=>{if(q.value!=ST.q){ST.q=q.value;render()}});
+a.querySelectorAll('.st').forEach(i=>i.onchange=()=>{sv(i.dataset.k,i.value===''?null:+i.value);render()});a.querySelectorAll('.pl input[type=checkbox]').forEach(i=>i.onchange=()=>sv(i.dataset.k,i.checked?1:0));
+a.querySelectorAll('.ck').forEach(i=>i.onchange=()=>ckSave(o=>{const r=o.items[i.dataset.p]||[0,0,0,0,0];r[+i.dataset.j]=i.checked?1:0;o.items[i.dataset.p]=r}));
+a.querySelectorAll('.cn').forEach(i=>i.onchange=()=>ckSave(o=>{o.notes[i.dataset.p]=i.value}));on('#cd',e=>{CD=e.target.value||CD;render()});
+const sp=$('#sp');if(sp)sp.onchange=async e=>{PER=e.target.value;await loadAll();await loadChecks();render()};
+const lo=$('#lo');if(lo)lo.onclick=async()=>{await sb.auth.signOut();location.reload()};
+const bk=$('#bk');if(bk)bk.onclick=async()=>{const a=await sb.from('sales_data').select('*'),c=await sb.from('display_checks').select('*'),u=URL.createObjectURL(new Blob([JSON.stringify({sales:a.data,checks:c.data})],{type:'application/json'})),l=document.createElement('a');l.href=u;l.download='cadangan-niceso-'+new Date().toISOString().slice(0,10)+'.json';l.click()}}
+async function up(fs){for(const f of fs){try{const wb=XLSX.read(await f.arrayBuffer()),a=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true}),hi=a.findIndex(r=>r&&r[0]==='No'&&r.includes('Completed Date'));if(hi<0)throw 0;
+const h=a[hi],c=n=>h.indexOf(n),sr=a.find(r=>r&&String(r[0]).startsWith('Store:')),name=sr?String(sr[0]).slice(7).trim():f.name,ix={},items=[],rows=[];
+for(const r of a.slice(hi+1)){const q=+r[c('Qty')],v=+r[c('Sales (Inc Tax)')],d=String(r[c('Completed Date')]).slice(0,10);if(!(q>0)||!(v>=0)||!/^\d{4}-/.test(d))continue;const n=String(r[c('Item')]).trim();if(!(n in ix)){ix[n]=items.length;items.push([n,r[c('Katagory Utama')]||r[c('Type Name')]||'-'])}rows.push([d,parseInt(r[c('Completed Time')])||0,ix[n],q,Math.round(v)])}
+const ds=rows.map(r=>r[0]).sort(),per=ds[0].slice(0,7),m=/NICESO\s*(\d+)/i.exec(name);if(ds[ds.length-1].slice(0,7)!=per)throw new Error('berisi lebih dari satu bulan');if(!m)throw new Error('kode toko tidak ditemukan');
+const r=await sb.from('sales_data').upsert({store_code:m[1],store_name:name,period:per,payload:{items,rows}},{onConflict:'store_code,period'});if(r.error)throw r.error;LOG.push('OK '+nm(name)+' · '+per+' · '+rows.length+' baris')}catch(e){LOG.push('GAGAL '+f.name+': '+(e.message||'format tidak dikenali, gunakan laporan Detailed Sales'))}}
+await loadAll();await loadChecks();render()}
+boot();
+</script></body></html>
